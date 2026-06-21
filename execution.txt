@@ -1,0 +1,28 @@
+STEP 1 — Start MySQL
+brew services start mysql
+
+STEP 2 — Create the database and user
+mysql -u root -p
+Then inside MySQL shell paste all of this:
+sqlCREATE DATABASE IF NOT EXISTS dfems_db CHARACTER SET utf8mb4;
+DROP USER IF EXISTS 'dfems_user'@'localhost';
+CREATE USER 'dfems_user'@'localhost' IDENTIFIED BY 'dfems_pass';
+GRANT ALL PRIVILEGES ON dfems_db.* TO 'dfems_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+
+STEP 3 — Go to your project folder
+cd ~/Downloads/dfems
+
+STEP 4 — Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+STEP 5 — Install dependencies
+pip install -r requirements.txt
+
+STEP 6 — Set up your .env file
+cp .env.example .env
+
+STEP 7 — Run the app
+python3 app.py
