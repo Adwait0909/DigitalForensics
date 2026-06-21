@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% set current_user = user %}
+{% block title %}Evidence{% endblock %}
+{% block breadcrumb %}<span>Evidence</span>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Evidence Repository</h1>
+  {% if user.role.name in ['Administrator','Investigator'] %}
+  <a href="{{ url_for('evidence.upload') }}" class="btn btn--primary">↑ Upload Evidence</a>
+  {% endif %}
+</div>
+
+<form method="GET" class="filter-bar">
+  <div class="filter-bar__search">
+    <span class="filter-bar__icon">⌕</span>
+    <input type="text" name="q" value="{{ q }}" placeholder="Filename, Evidence ID, SHA-256…" class="form-input filter-bar__input" />
+  </div>
+  <select name="status" class="form-input form-select filter-bar__select">
+    <option value="">All Statuses</option>
+    {% for s in ['Unverified','Verified','Tampered'] %}
+    <option value="{{ s }}" {% if status_f == s %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <select name="case_id" class="form-input form-select filter-bar__select">
+    <option value="">All Cases</option>
+    {% for c in cases %}
+    <option value="{{ c.id }}" {% if case_f == c.id|string %}selected{% endif %}>{{ c.case_number }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn--secondary">Filter</button>
+  <a href="{{ url_for('evidence.list_evidence') }}" class="btn btn--ghost">Reset</a>
+</form>
+
+<div class="panel">
+  <div class="panel__body panel__body--flush">
+    {% if evidence.items %}
+    <table class="table table--hover">
+      <thead>
+        <tr>
+          <th>Evidence ID</th><th>Filename</th><th>Case</th>
+          <th>Type</th><th>Size</th><th>SHA-256 (preview)</th>
+          <th>Integrity</th><th>Uploaded</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ev in evidence.items %}
+        <tr>
+          <td><span class="mono small">{{ ev.evidence_id }}</span></td>
+          <td>{{ ev.original_name }}</td>
+          <td><a href="{{ url_for('cases.view_case', case_id=ev.case_id) }}" class="link-mono">{{ ev.case.case_number }}</a></td>
+          <td><span class="badge badge--type">{{ ev.file_type | upper }}</span></td>
+          <td class="text-muted">{{ (ev.file_size / 1024) | round(1) }} KB</td>
+          <td><span class="mono small text-muted">{{ ev.sha256_hash[:16] }}…</span></td>
+          <td><span class="badge badge--integrity-{{ ev.integrity_status | lower }}">{{ ev.integrity_status }}</span></td>
+          <td class="text-muted">{{ ev.uploaded_at.strftime('%Y-%m-%d') }}</td>
+          <td><a href="{{ url_for('evidence.detail', evidence_id=ev.id) }}" class="btn btn--xs btn--ghost">→</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if evidence.pages > 1 %}
+    <div class="pagination">
+      {% if evidence.has_prev %}
+      <a href="{{ url_for('evidence.list_evidence', page=evidence.prev_num, q=q, status=status_f, case_id=case_f) }}" class="pagination__btn">← Prev</a>
+      {% endif %}
+      <span class="pagination__info">Page {{ evidence.page }} / {{ evidence.pages }}</span>
+      {% if evidence.has_next %}
+      <a href="{{ url_for('evidence.list_evidence', page=evidence.next_num, q=q, status=status_f, case_id=case_f) }}" class="pagination__btn">Next →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state empty-state--large">
+      <div class="empty-state__icon">◈</div>
+      <div class="empty-state__text">No evidence found.</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

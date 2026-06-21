@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% set current_user = user %}
+{% block title %}Cases{% endblock %}
+{% block breadcrumb %}<span>Cases</span>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Investigation Cases</h1>
+  {% if user.role.name in ['Administrator','Investigator'] %}
+  <a href="{{ url_for('cases.create_case') }}" class="btn btn--primary">＋ New Case</a>
+  {% endif %}
+</div>
+
+{# ── Search + filters ─────────────────────────────────────────────────────── #}
+<form method="GET" class="filter-bar">
+  <div class="filter-bar__search">
+    <span class="filter-bar__icon">⌕</span>
+    <input type="text" name="q" value="{{ search_query }}" placeholder="Search case number or title…" class="form-input filter-bar__input" />
+  </div>
+  <select name="status" class="form-input form-select filter-bar__select">
+    <option value="">All Statuses</option>
+    {% for s in ['Active','Closed','Archived','Pending'] %}
+    <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <select name="priority" class="form-input form-select filter-bar__select">
+    <option value="">All Priorities</option>
+    {% for p in ['Critical','High','Medium','Low'] %}
+    <option value="{{ p }}" {% if priority_filter == p %}selected{% endif %}>{{ p }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn--secondary">Filter</button>
+  <a href="{{ url_for('cases.list_cases') }}" class="btn btn--ghost">Reset</a>
+</form>
+
+{# ── Cases table ──────────────────────────────────────────────────────────── #}
+<div class="panel">
+  <div class="panel__body panel__body--flush">
+    {% if cases.items %}
+    <table class="table table--hover">
+      <thead>
+        <tr>
+          <th>Case Number</th><th>Title</th><th>Priority</th>
+          <th>Status</th><th>Evidence</th><th>Assigned</th><th>Created</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in cases.items %}
+        <tr>
+          <td><a href="{{ url_for('cases.view_case', case_id=c.id) }}" class="link-mono">{{ c.case_number }}</a></td>
+          <td>{{ c.title }}</td>
+          <td><span class="badge badge--{{ c.priority | lower }}">{{ c.priority }}</span></td>
+          <td><span class="badge badge--status-{{ c.status | lower }}">{{ c.status }}</span></td>
+          <td class="text-center">{{ c.evidence.count() }}</td>
+          <td>{{ c.assignee.username if c.assignee else '—' }}</td>
+          <td class="text-muted">{{ c.created_at.strftime('%Y-%m-%d') }}</td>
+          <td>
+            <a href="{{ url_for('cases.view_case', case_id=c.id) }}" class="btn btn--xs btn--ghost">View</a>
+            {% if user.role.name in ['Administrator','Investigator'] %}
+            <a href="{{ url_for('cases.edit_case', case_id=c.id) }}" class="btn btn--xs btn--secondary">Edit</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {# Pagination #}
+    {% if cases.pages > 1 %}
+    <div class="pagination">
+      {% if cases.has_prev %}
+      <a href="{{ url_for('cases.list_cases', page=cases.prev_num, q=search_query, status=status_filter, priority=priority_filter) }}" class="pagination__btn">← Prev</a>
+      {% endif %}
+      <span class="pagination__info">Page {{ cases.page }} / {{ cases.pages }}</span>
+      {% if cases.has_next %}
+      <a href="{{ url_for('cases.list_cases', page=cases.next_num, q=search_query, status=status_filter, priority=priority_filter) }}" class="pagination__btn">Next →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state empty-state--large">
+      <div class="empty-state__icon">◫</div>
+      <div class="empty-state__text">No cases found.</div>
+      {% if user.role.name in ['Administrator','Investigator'] %}
+      <a href="{{ url_for('cases.create_case') }}" class="btn btn--primary" style="margin-top:1rem">Create First Case</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

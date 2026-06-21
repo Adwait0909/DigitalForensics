@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}DFEMS{% endblock %} — Digital Forensics EMS</title>
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}app-layout{% endblock %}">
+
+{# ── Flash messages ──────────────────────────────────────────────────────── #}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-container">
+      {% for cat, msg in messages %}
+        <div class="flash flash--{{ cat }}">
+          <span class="flash__icon">
+            {% if cat == 'success' %}✓{% elif cat == 'danger' %}✕{% elif cat == 'warning' %}⚠{% else %}ℹ{% endif %}
+          </span>
+          {{ msg }}
+          <button class="flash__close" onclick="this.parentElement.remove()">×</button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+{% block layout %}
+{# ── Sidebar navigation ────────────────────────────────────────────────── #}
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar__brand">
+    <span class="sidebar__brand-icon">⬡</span>
+    <span class="sidebar__brand-text">DFEMS</span>
+  </div>
+
+  {% if current_user %}
+  <div class="sidebar__user">
+    <div class="sidebar__avatar">{{ current_user.username[0].upper() }}</div>
+    <div>
+      <div class="sidebar__username">{{ current_user.username }}</div>
+      <div class="sidebar__role badge badge--{{ current_user.role.name | lower }}">{{ current_user.role.name }}</div>
+    </div>
+  </div>
+
+  <nav class="sidebar__nav">
+    <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if request.endpoint == 'dashboard.index' %}nav-item--active{% endif %}">
+      <span class="nav-icon">⊞</span> Dashboard
+    </a>
+    <div class="nav-group-label">Investigation</div>
+    <a href="{{ url_for('cases.list_cases') }}" class="nav-item {% if 'cases.' in request.endpoint %}nav-item--active{% endif %}">
+      <span class="nav-icon">◫</span> Cases
+    </a>
+    <a href="{{ url_for('cases.create_case') }}" class="nav-item {% if request.endpoint == 'cases.create_case' %}nav-item--active{% endif %}">
+      <span class="nav-icon">＋</span> New Case
+    </a>
+    <div class="nav-group-label">Evidence</div>
+    <a href="{{ url_for('evidence.list_evidence') }}" class="nav-item {% if 'evidence.' in request.endpoint %}nav-item--active{% endif %}">
+      <span class="nav-icon">◈</span> Evidence
+    </a>
+    <a href="{{ url_for('evidence.upload') }}" class="nav-item">
+      <span class="nav-icon">↑</span> Upload Evidence
+    </a>
+    {% if current_user.role.name in ['Administrator', 'Auditor'] %}
+    <div class="nav-group-label">System</div>
+    <a href="{{ url_for('audit.index') }}" class="nav-item {% if 'audit.' in request.endpoint %}nav-item--active{% endif %}">
+      <span class="nav-icon">◉</span> Audit Logs
+    </a>
+    {% endif %}
+    {% if current_user.role.name == 'Administrator' %}
+    <a href="{{ url_for('admin.users') }}" class="nav-item {% if 'admin.' in request.endpoint %}nav-item--active{% endif %}">
+      <span class="nav-icon">⚙</span> Admin
+    </a>
+    {% endif %}
+  </nav>
+
+  <div class="sidebar__footer">
+    <a href="{{ url_for('auth.logout') }}" class="nav-item nav-item--logout">
+      <span class="nav-icon">⏻</span> Sign Out
+    </a>
+  </div>
+  {% endif %}
+</aside>
+
+{# ── Main content ──────────────────────────────────────────────────────── #}
+<main class="main">
+  <header class="topbar">
+    <button class="topbar__toggle" onclick="document.getElementById('sidebar').classList.toggle('sidebar--open')" aria-label="Toggle menu">☰</button>
+    <div class="topbar__breadcrumb">{% block breadcrumb %}{% endblock %}</div>
+    <div class="topbar__right">
+      <span class="topbar__time" id="clock"></span>
+      {% if current_user %}
+      <span class="topbar__user">{{ current_user.full_name }}</span>
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="page-content">
+    {% block content %}{% endblock %}
+  </div>
+</main>
+{% endblock %}
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

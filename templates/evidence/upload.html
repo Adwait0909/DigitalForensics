@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% set current_user = user %}
+{% block title %}Upload Evidence{% endblock %}
+{% block breadcrumb %}
+  <a href="{{ url_for('evidence.list_evidence') }}">Evidence</a>
+  <span class="breadcrumb-sep">/</span><span>Upload</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Upload Evidence File</h1>
+</div>
+
+<div class="form-card">
+  <form method="POST" action="{{ url_for('evidence.upload') }}" enctype="multipart/form-data" id="upload-form">
+    <div class="form-group">
+      <label class="form-label">Case <span class="required">*</span></label>
+      <select name="case_id" class="form-input form-select" required>
+        <option value="">— Select Active Case —</option>
+        {% for c in cases %}
+        <option value="{{ c.id }}">{{ c.case_number }} — {{ c.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Evidence File <span class="required">*</span></label>
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" name="file" id="file-input" class="drop-zone__input" required />
+        <div class="drop-zone__body" id="drop-body">
+          <div class="drop-zone__icon">⬡</div>
+          <div class="drop-zone__text">Drag & drop or <span class="drop-zone__link">browse</span></div>
+          <div class="drop-zone__hint">Images, PDFs, ZIPs, logs, PCAP, memory dumps — max 500 MB</div>
+        </div>
+      </div>
+      <div class="file-preview" id="file-preview" style="display:none"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea name="description" class="form-input form-textarea" rows="3" placeholder="Source, collection method, notes…"></textarea>
+    </div>
+
+    <div class="upload-progress" id="upload-progress" style="display:none">
+      <div class="upload-progress__label">Computing hashes & uploading…</div>
+      <div class="upload-progress__bar"><div class="upload-progress__fill" id="progress-fill"></div></div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn--primary" id="submit-btn">Upload &amp; Hash</button>
+      <a href="{{ url_for('evidence.list_evidence') }}" class="btn btn--ghost">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const dropZone   = document.getElementById('drop-zone');
+const fileInput  = document.getElementById('file-input');
+const dropBody   = document.getElementById('drop-body');
+const filePreview = document.getElementById('file-preview');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drop-zone--over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drop-zone--over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drop-zone--over');
+  if (e.dataTransfer.files.length) {
+    fileInput.files = e.dataTransfer.files;
+    showPreview(e.dataTransfer.files[0]);
+  }
+});
+fileInput.addEventListener('change', () => { if (fileInput.files.length) showPreview(fileInput.files[0]); });
+
+function showPreview(file) {
+  const mb = (file.size / 1048576).toFixed(2);
+  filePreview.style.display = 'flex';
+  filePreview.innerHTML = `<span class="file-preview__icon">◈</span>
+    <div><div class="file-preview__name">${file.name}</div>
+    <div class="file-preview__meta">${mb} MB · ${file.type || 'unknown type'}</div></div>`;
+}
+
+document.getElementById('upload-form').addEventListener('submit', () => {
+  document.getElementById('upload-progress').style.display = 'block';
+  document.getElementById('submit-btn').disabled = true;
+  let w = 0;
+  const fill = document.getElementById('progress-fill');
+  const interval = setInterval(() => { w = Math.min(w + Math.random() * 8, 90); fill.style.width = w + '%'; }, 300);
+});
+</script>
+{% endblock %}

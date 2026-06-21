@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% set current_user = user %}
+{% block title %}{{ ev.evidence_id }}{% endblock %}
+{% block breadcrumb %}
+  <a href="{{ url_for('evidence.list_evidence') }}">Evidence</a>
+  <span class="breadcrumb-sep">/</span><span>{{ ev.evidence_id }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ ev.original_name }}</h1>
+    <div class="page-meta">
+      <span class="mono small">{{ ev.evidence_id }}</span>
+      <span class="badge badge--integrity-{{ ev.integrity_status | lower }}">{{ ev.integrity_status }}</span>
+      <span class="badge badge--type">{{ ev.file_type | upper }}</span>
+    </div>
+  </div>
+  <div class="page-actions">
+    <a href="{{ url_for('evidence.download', evidence_id=ev.id) }}" class="btn btn--secondary">↓ Download</a>
+    {% if user.role.name in ['Administrator','Investigator','Analyst'] %}
+    <form method="POST" action="{{ url_for('evidence.verify', evidence_id=ev.id) }}" style="display:inline">
+      <button type="submit" class="btn btn--primary">⟳ Verify Integrity</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="detail-grid">
+  {# Metadata panel #}
+  <div class="panel">
+    <div class="panel__header"><h2 class="panel__title">File Metadata</h2></div>
+    <div class="panel__body">
+      <dl class="detail-list">
+        <dt>Evidence ID</dt><dd class="mono">{{ ev.evidence_id }}</dd>
+        <dt>Case</dt><dd><a href="{{ url_for('cases.view_case', case_id=ev.case_id) }}">{{ ev.case.case_number }} — {{ ev.case.title }}</a></dd>
+        <dt>Original Filename</dt><dd>{{ ev.original_name }}</dd>
+        <dt>File Type</dt><dd>{{ ev.file_type | upper }}</dd>
+        <dt>File Size</dt><dd>{{ (ev.file_size / 1024) | round(2) }} KB ({{ ev.file_size }} bytes)</dd>
+        <dt>Uploaded By</dt><dd>{{ ev.uploader.full_name }} ({{ ev.uploader.username }})</dd>
+        <dt>Uploaded At</dt><dd>{{ ev.uploaded_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</dd>
+        {% if ev.last_verified_at %}
+        <dt>Last Verified</dt><dd>{{ ev.last_verified_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</dd>
+        {% endif %}
+        <dt>Description</dt><dd>{{ ev.description or '—' }}</dd>
+      </dl>
+    </div>
+  </div>
+
+  {# Hash panel #}
+  <div class="panel">
+    <div class="panel__header"><h2 class="panel__title">Cryptographic Hashes</h2></div>
+    <div class="panel__body">
+      <div class="hash-block">
+        <div class="hash-block__label">SHA-256</div>
+        <div class="hash-block__value mono">{{ ev.sha256_hash }}</div>
+        <button class="hash-block__copy" onclick="copyToClipboard('{{ ev.sha256_hash }}')">Copy</button>
+      </div>
+      <div class="hash-block" style="margin-top:1rem">
+        <div class="hash-block__label">MD5</div>
+        <div class="hash-block__value mono">{{ ev.md5_hash }}</div>
+        <button class="hash-block__copy" onclick="copyToClipboard('{{ ev.md5_hash }}')">Copy</button>
+      </div>
+
+      <div class="integrity-badge integrity-badge--{{ ev.integrity_status | lower }}" style="margin-top:1.5rem">
+        <span class="integrity-badge__icon">
+          {% if ev.integrity_status == 'Verified' %}✓
+          {% elif ev.integrity_status == 'Tampered' %}✕
+          {% else %}?{% endif %}
+        </span>
+        <div>
+          <div class="integrity-badge__status">{{ ev.integrity_status }}</div>
+          <div class="integrity-badge__sub">
+            {% if ev.integrity_status == 'Verified' %}File hashes match. Evidence intact.
+            {% elif ev.integrity_status == 'Tampered' %}HASH MISMATCH DETECTED. Evidence may be compromised.
+            {% else %}Not yet verified. Run integrity check.{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Chain of custody timeline #}
+<div class="panel" style="margin-top:1.5rem">
+  <div class="panel__header"><h2 class="panel__title">Evidence Custody Log</h2></div>
+  <div class="panel__body">
+    <div class="timeline">
+      {% for rec in custody %}
+      <div class="timeline-item">
+        <div class="timeline-item__dot"></div>
+        <div class="timeline-item__content">
+          <span class="timeline-item__action">{{ rec.action }}</span>
+          <span class="timeline-item__meta">
+            by <strong>{{ rec.actor.username }}</strong>
+            · {{ rec.timestamp.strftime('%d %b %Y %H:%M:%S') }}
+            {% if rec.ip_address %} · IP: {{ rec.ip_address }}{% endif %}
+          </span>
+          {% if rec.notes %}<div class="timeline-item__notes">{{ rec.notes }}</div>{% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-state">No custody records for this evidence item.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const toast = document.createElement('div');
+    toast.className = 'flash flash--success';
+    toast.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999';
+    toast.textContent = 'Copied to clipboard!';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+  });
+}
+</script>
+{% endblock %}

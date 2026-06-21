@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% set current_user = user %}
+{% block title %}Audit Logs{% endblock %}
+{% block breadcrumb %}<span>Audit Logs</span>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">System Audit Log</h1>
+  <p class="page-sub">Complete record of all user actions</p>
+</div>
+
+<form method="GET" class="filter-bar">
+  <div class="filter-bar__search">
+    <span class="filter-bar__icon">⌕</span>
+    <input type="text" name="q" value="{{ q }}" placeholder="Search action or details…" class="form-input filter-bar__input" />
+  </div>
+  <select name="status" class="form-input form-select filter-bar__select">
+    <option value="">All</option>
+    <option value="success" {% if status_f == 'success' %}selected{% endif %}>Success</option>
+    <option value="failure" {% if status_f == 'failure' %}selected{% endif %}>Failure</option>
+    <option value="warning" {% if status_f == 'warning' %}selected{% endif %}>Warning</option>
+  </select>
+  <button type="submit" class="btn btn--secondary">Filter</button>
+  <a href="{{ url_for('audit.index') }}" class="btn btn--ghost">Reset</a>
+</form>
+
+<div class="panel">
+  <div class="panel__body panel__body--flush">
+    {% if logs.items %}
+    <table class="table table--dense">
+      <thead>
+        <tr>
+          <th>#</th><th>Timestamp</th><th>User</th><th>Action</th>
+          <th>Resource</th><th>IP Address</th><th>Status</th><th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs.items %}
+        <tr>
+          <td class="text-muted small">{{ log.id }}</td>
+          <td class="mono small">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+          <td>{{ log.user.username if log.user else 'anonymous' }}</td>
+          <td><code class="action-code">{{ log.action }}</code></td>
+          <td>{{ log.resource or '—' }}</td>
+          <td class="mono small text-muted">{{ log.ip_address or '—' }}</td>
+          <td><span class="badge badge--log-{{ log.status }}">{{ log.status }}</span></td>
+          <td class="text-muted small">{{ (log.details or '')[:60] }}{% if log.details and log.details|length > 60 %}…{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if logs.pages > 1 %}
+    <div class="pagination">
+      {% if logs.has_prev %}
+      <a href="{{ url_for('audit.index', page=logs.prev_num, q=q, status=status_f) }}" class="pagination__btn">← Prev</a>
+      {% endif %}
+      <span class="pagination__info">Page {{ logs.page }} / {{ logs.pages }}</span>
+      {% if logs.has_next %}
+      <a href="{{ url_for('audit.index', page=logs.next_num, q=q, status=status_f) }}" class="pagination__btn">Next →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state empty-state--large">
+      <div class="empty-state__icon">◉</div>
+      <div class="empty-state__text">No audit records found.</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% set current_user = user %}
+{% block title %}Dashboard{% endblock %}
+{% block breadcrumb %}<span>Dashboard</span>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Operations Dashboard</h1>
+  <p class="page-sub">Overview of all forensic investigation activity</p>
+</div>
+
+{# ── Stat cards ──────────────────────────────────────────────────────────── #}
+<div class="stats-grid">
+  <div class="stat-card stat-card--blue">
+    <div class="stat-card__icon">◫</div>
+    <div class="stat-card__val">{{ total_cases }}</div>
+    <div class="stat-card__label">Total Cases</div>
+  </div>
+  <div class="stat-card stat-card--green">
+    <div class="stat-card__icon">◉</div>
+    <div class="stat-card__val">{{ active_cases }}</div>
+    <div class="stat-card__label">Active Cases</div>
+  </div>
+  <div class="stat-card stat-card--gray">
+    <div class="stat-card__icon">✓</div>
+    <div class="stat-card__val">{{ closed_cases }}</div>
+    <div class="stat-card__label">Closed Cases</div>
+  </div>
+  <div class="stat-card stat-card--cyan">
+    <div class="stat-card__icon">◈</div>
+    <div class="stat-card__val">{{ total_evidence }}</div>
+    <div class="stat-card__label">Evidence Files</div>
+  </div>
+  <div class="stat-card stat-card--green">
+    <div class="stat-card__icon">⊕</div>
+    <div class="stat-card__val">{{ verified_evidence }}</div>
+    <div class="stat-card__label">Verified Files</div>
+  </div>
+  <div class="stat-card stat-card--red">
+    <div class="stat-card__icon">⚠</div>
+    <div class="stat-card__val">{{ tampered_evidence }}</div>
+    <div class="stat-card__label">Tampered Files</div>
+  </div>
+</div>
+
+{# ── Lower panels ─────────────────────────────────────────────────────────── #}
+<div class="dashboard-panels">
+
+  {# Recent Cases #}
+  <div class="panel">
+    <div class="panel__header">
+      <h2 class="panel__title">Recent Cases</h2>
+      <a href="{{ url_for('cases.list_cases') }}" class="panel__link">View all →</a>
+    </div>
+    <div class="panel__body">
+      {% if recent_cases %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Case No.</th><th>Title</th><th>Priority</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in recent_cases %}
+          <tr>
+            <td><a href="{{ url_for('cases.view_case', case_id=c.id) }}" class="link-mono">{{ c.case_number }}</a></td>
+            <td>{{ c.title }}</td>
+            <td><span class="badge badge--{{ c.priority | lower }}">{{ c.priority }}</span></td>
+            <td><span class="badge badge--status-{{ c.status | lower }}">{{ c.status }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">No cases yet. <a href="{{ url_for('cases.create_case') }}">Create one →</a></div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Activity timeline #}
+  <div class="panel">
+    <div class="panel__header">
+      <h2 class="panel__title">Recent Activity</h2>
+      <a href="{{ url_for('audit.index') if user.role.name in ['Administrator','Auditor'] else '#' }}" class="panel__link">Full log →</a>
+    </div>
+    <div class="panel__body">
+      <div class="timeline">
+        {% for entry in recent_custody %}
+        <div class="timeline-item">
+          <div class="timeline-item__dot"></div>
+          <div class="timeline-item__content">
+            <span class="timeline-item__action">{{ entry.action }}</span>
+            <span class="timeline-item__meta">
+              by <strong>{{ entry.actor.username if entry.actor else '—' }}</strong>
+              · {{ entry.timestamp.strftime('%d %b %Y %H:%M') }}
+            </span>
+            {% if entry.notes %}
+            <div class="timeline-item__notes">{{ entry.notes }}</div>
+            {% endif %}
+          </div>
+        </div>
+        {% else %}
+        <div class="empty-state">No recent activity.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
