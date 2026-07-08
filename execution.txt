@@ -4,7 +4,7 @@ brew services start mysql
 STEP 2 — Create the database and user
 mysql -u root -p
 Then inside MySQL shell paste all of this:
-sqlCREATE DATABASE IF NOT EXISTS dfems_db CHARACTER SET utf8mb4;
+CREATE DATABASE IF NOT EXISTS dfems_db CHARACTER SET utf8mb4;
 DROP USER IF EXISTS 'dfems_user'@'localhost';
 CREATE USER 'dfems_user'@'localhost' IDENTIFIED BY 'dfems_pass';
 GRANT ALL PRIVILEGES ON dfems_db.* TO 'dfems_user'@'localhost';
